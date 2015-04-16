@@ -1,3 +1,5 @@
+- [nginx-loadbalancer](#nginx-loadbalancer)
+
 # nginx-loadbalancer
 
 ```
@@ -8,27 +10,25 @@ Backend should follow this rules in order to provide to nginx all required infor
 
 ```
 /lb
+  /settings '{
+    "workerProcesses": "auto",
+    "workerConnections": "1024"
+  }'
+  /settings
   /hosts
     /lisa.contoso.com
       /listeners
-        /ls1 '{ "Protocol":"http", "Address": "0.0.0.0:80" }'
+        /ls1 '{ "protocol": "http", "address": "0.0.0.0:80" }'
       /locations
-        /loc1
-          /path '/api/.*'
-          /upstream 'up1'
-        /loc2
-          /options
-          /path '/.*'
-          /upstream 'up2'
+        /loc2 '{ "path": "/api/.*", "upstreamId": "up1" }'
+        /loc2 '{ "path": "/.*", "upstreamId": "up2" }'
   /upstreams
     /up1
-      /options
       /endpoints
-        /e1 '10.10.10.10:8085'
-        /e2 '10.10.10.11:8085'
+        /e1 '{ "url": "10.10.10.10:8085" }'
+        /e2 '{ "url": "10.10.10.11:8085" }'
     /up2
-      /options
       /endpoints
-        /e1 '10.10.10.10:8086'
-        /e2 '10.10.10.11:8086'
+        /e1 '{ "url": "10.10.10.10:8086" }'
+        /e2 '{ "url": "10.10.10.11:8086" }'
 ```
