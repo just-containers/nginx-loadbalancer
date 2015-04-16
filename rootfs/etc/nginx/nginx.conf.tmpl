@@ -1,20 +1,20 @@
 user nginx;
 
-{{define "configuration"}}
-worker_processes {{.worker_processes}};
+{{define "settings"}}
+worker_processes {{or .workerProcesses "auto"}};
 
-error_log /var/log/nginx/error.log warn;
+error_log /var/run/s6/nginx-error-log-fifo warn;
 pid /var/run/nginx.pid;
 
 events {
-  worker_connections {{.worker_connections}};
+  worker_connections {{or .workerConnections "1024"}};
 }
 {{end}}
 
-{{if exists "/options"}}
-  {{template "configuration" (json (getv "/options"))}}
+{{if exists "/settings"}}
+  {{template "settings" (json (getv "/settings"))}}
 {{else}}
-  {{template "configuration" (json `{ "worker_processes": "auto", "worker_connections": 1024 }`)}}
+  {{template "settings" (json `{}`)}}
 {{end}}
 
 http {
@@ -25,7 +25,6 @@ http {
                   '$status $body_bytes_sent "$http_referer" '
                   '"$http_user_agent" "$http_x_forwarded_for"';
   access_log /var/run/s6/nginx-access-log-fifo main;
-  error_log /var/run/s6/nginx-error-log-fifo warn;
 
   sendfile on;
   #tcp_nopush on;
@@ -69,12 +68,12 @@ http {
   # more: http://www.html5rocks.com/en/tutorials/security/content-security-policy/#inline-code-considered-harmful
   #add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ssl.google-analytics.com https://assets.zendesk.com https://connect.facebook.net; img-src 'self' https://ssl.google-analytics.com https://s-static.ak.facebook.com https://assets.zendesk.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.zendesk.com; font-src 'self' https://themes.googleusercontent.com; frame-src https://assets.zendesk.com https://www.facebook.com https://s-static.ak.facebook.com https://tautt.zendesk.com; object-src 'none'";
 
-{{$dir := "/upstreams"}}{{range $upstreamdir := lsdir $dir}}
-  {{$currentdir := printf "%s/%s" $dir $upstreamdir}}
-  upstream {{base $currentdir}} {
-  {{range gets (printf "%s/endpoints/*" $currentdir)}}
-    server {{.Value}};
-  {{end}}
+{{$upstreams := "/upstreams"}}{{range $upstreambase := ls $upstreams}}
+{{$upstream := printf "%s/%s" $upstreams $upstreambase}}
+  upstream {{base $upstream}} {
+  {{range gets (printf "%s/servers/*" $upstream)}}{{with json .Value}}
+    server {{.url}};
+  {{end}}{{end}}
   }
 {{end}}
 
@@ -87,10 +86,10 @@ http {
   server {
     server_name {{base $host}};
 
-      {{if eq .Protocol "http"}}
-    listen {{.Address}};
-      {{else if eq .Protocol "https"}}
-    listen {{.Address}} ssl;
+      {{if eq .protocol "http"}}
+    listen {{.address}};
+      {{else if eq .protocol "https"}}
+    listen {{.address}} ssl;
 
     ssl on;
     ssl_certificate           /etc/nginx/certs/{{base $host}};
@@ -130,14 +129,16 @@ http {
 
       {{$locations := printf "%s/locations" $host}}{{range $locationbase := ls $locations}}
         {{$location := printf "%s/%s" $locations $locationbase}}
-        {{if lsdir (printf "/upstreams/%s" (getv (printf "%s/upstream" $location))) }}
-    location {{getv (printf "%s/path" $location) }} {
+        {{with json (getv $location)}}
+          {{if lsdir (printf "/upstreams/%s" .upstreamId)}}
+    location {{.path}} {
       access_log       off;
-      proxy_pass       http://{{getv (printf "%s/upstream" $location) }};
+      proxy_pass       http://{{.upstreamId}};
       proxy_set_header Host $host;
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
+          {{end}}
         {{end}}
       {{end}}
   }
