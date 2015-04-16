@@ -1,9 +1,9 @@
-- [nginx-loadbalancer](#nginx-loadbalancer)
+- [nginx-loadbalancer](#nginx-loadbalancer) [![Docker Repository on Quay.io](https://quay.io/repository/justcontainers/nginx-loadbalancer/status "Docker Repository on Quay.io")](https://quay.io/repository/justcontainers/nginx-loadbalancer)
 
 # nginx-loadbalancer
 
 ```
-docker run -ti -e CONFD_PREFIX=/lb lb
+docker run -ti -e CONFD_PREFIX=/lb quay.io/justcontainers/nginx-loadbalancer
 ```
 
 Backend should follow this rules in order to provide to nginx all required information:
@@ -14,7 +14,6 @@ Backend should follow this rules in order to provide to nginx all required infor
     "workerProcesses": "auto",
     "workerConnections": "1024"
   }'
-  /settings
   /hosts
     /lisa.contoso.com
       /listeners
