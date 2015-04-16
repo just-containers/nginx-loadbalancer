@@ -21,11 +21,11 @@ Backend should follow this rules in order to provide to nginx all required infor
         /loc2 '{ "path": "/.*", "upstreamId": "up2" }'
   /upstreams
     /up1
-      /endpoints
+      /servers
         /e1 '{ "url": "10.10.10.10:8085" }'
         /e2 '{ "url": "10.10.10.11:8085" }'
     /up2
-      /endpoints
+      /servers
         /e1 '{ "url": "10.10.10.10:8086" }'
         /e2 '{ "url": "10.10.10.11:8086" }'
 ```
