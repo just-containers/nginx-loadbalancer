@@ -1,6 +1,4 @@
-- [nginx-loadbalancer](#nginx-loadbalancer) [![Docker Repository on Quay.io](https://quay.io/repository/justcontainers/nginx-loadbalancer/status "Docker Repository on Quay.io")](https://quay.io/repository/justcontainers/nginx-loadbalancer)
-
-# nginx-loadbalancer
+# nginx-loadbalancer [![Docker Repository on Quay.io](https://quay.io/repository/justcontainers/nginx-loadbalancer/status "Docker Repository on Quay.io")](https://quay.io/repository/justcontainers/nginx-loadbalancer)
 
 ```
 docker run -ti -e CONFD_PREFIX=/lb quay.io/justcontainers/nginx-loadbalancer
