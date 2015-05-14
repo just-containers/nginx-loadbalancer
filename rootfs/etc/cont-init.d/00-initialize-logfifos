@@ -1,25 +1,4 @@
 #!/usr/bin/execlineb -P
 
-# wait to fdholderd
-if { s6-svwait -U /var/run/s6/services/s6-fdholderd }
-
-
-# initialize fifos and put them inside fdholderd
-if { s6-rmrf /var/run/s6/nginx-access-log-fifo }
-if { s6-mkfifo -m 0600 -- /var/run/s6/nginx-access-log-fifo }
-if
-{
-  redirfd -rnb 0 /var/run/s6/nginx-access-log-fifo
-  s6-fdholder-store /var/run/s6/fdholderd-socket fifo:nginx-access-log
-}
-if { s6-rmrf /var/run/s6/nginx-error-log-fifo }
-if { s6-mkfifo -m 0600 -- /var/run/s6/nginx-error-log-fifo }
-if
-{
-  redirfd -rnb 0 /var/run/s6/nginx-error-log-fifo
-  s6-fdholder-store /var/run/s6/fdholderd-socket fifo:nginx-error-log
-}
-
-
-# finished successfully :-)
-s6-true
+if { logutil-newfifo /var/run/s6/nginx-access-log-fifo }
+if { logutil-newfifo /var/run/s6/nginx-error-log-fifo }
