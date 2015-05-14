@@ -1,4 +1,4 @@
-FROM quay.io/justcontainers/base:v0.6.0
+FROM quay.io/justcontainers/base:v0.7.0
 MAINTAINER Gorka Lerchundi Osa <glertxundi@gmail.com>
 
 ##
