@@ -1,4 +1,4 @@
-FROM quay.io/justcontainers/base:v0.7.0
+FROM quay.io/justcontainers/base:v0.7.2
 MAINTAINER Gorka Lerchundi Osa <glertxundi@gmail.com>
 
 ##
@@ -19,7 +19,10 @@ RUN chmod 0755 /usr/bin/confd
 ## ROOTFS
 ##
 
+# root filesystem
 COPY rootfs /
+
+# s6-fdholderd active by default
 RUN s6-rmrf /etc/s6/services/s6-fdholderd/down
 
 ##
