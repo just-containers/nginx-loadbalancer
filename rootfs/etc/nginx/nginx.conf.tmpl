@@ -92,16 +92,13 @@ http {
     listen {{.address}} ssl;
 
     ssl on;
-    ssl_certificate           /etc/nginx/certs/{{base $host}};
+    ssl_certificate           /etc/nginx/certs/{{base $host}}.crt;
     ssl_certificate_key       /etc/nginx/certs/{{base $host}}.key;
 
     # enable session resumption to improve https performance
     # http://vincent.bernat.im/en/blog/2011-ssl-session-reuse-rfc5077.html
     ssl_session_cache         shared:SSL:50m;
     ssl_session_timeout       5m;
-
-    # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
-    ssl_dhparam               /etc/ssl/certs/dhparam.pem;
 
     # enables server-side protection from BEAST attacks
     # http://blog.ivanristic.com/2013/09/is-beast-still-a-threat.html
@@ -118,9 +115,7 @@ http {
     # http://blog.mozilla.org/security/2013/07/29/ocsp-stapling-in-firefox/
     ssl_stapling on;
     ssl_stapling_verify off;
-    ssl_trusted_certificate /etc/nginx/certs/{{base $host}};
-    resolver 8.8.8.8 8.8.4.4 valid=300s;
-    resolver_timeout 5s;
+    ssl_trusted_certificate /etc/nginx/certs/{{base $host}}.crt;
 
     # config to enable HSTS(HTTP Strict Transport Security) https://developer.mozilla.org/en-US/docs/Security/HTTP_Strict_Transport_Security
     # to avoid ssl stripping https://en.wikipedia.org/wiki/SSL_stripping#SSL_stripping
