@@ -108,7 +108,7 @@ http {
     ssl_session_timeout       5m;
     
     # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
-    ssl_dhparam               /etc/ssl/certs/dhparam.pem;
+    ssl_dhparam               /etc/nginx/certs/dhparam.pem;
     
     # enables server-side protection from BEAST attacks
     # http://blog.ivanristic.com/2013/09/is-beast-still-a-threat.html
@@ -141,7 +141,7 @@ http {
       
         {{if eq .auth "restricted"}}
       auth_basic              "Restricted";
-      auth_basic_user_file    /etc/ssl/{{base $host}}.htpasswd;
+      auth_basic_user_file    /etc/nginx/certs/{{base $host}}.htpasswd;
         {{else}}
       auth_basic off;
         {{end}}
