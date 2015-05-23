@@ -99,7 +99,10 @@ http {
     # http://vincent.bernat.im/en/blog/2011-ssl-session-reuse-rfc5077.html
     ssl_session_cache         shared:SSL:50m;
     ssl_session_timeout       5m;
-
+    
+    # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
+    ssl_dhparam               /etc/ssl/certs/dhparam.pem;
+    
     # enables server-side protection from BEAST attacks
     # http://blog.ivanristic.com/2013/09/is-beast-still-a-threat.html
     ssl_prefer_server_ciphers on;
