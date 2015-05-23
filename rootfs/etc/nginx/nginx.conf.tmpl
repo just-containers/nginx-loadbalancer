@@ -143,7 +143,7 @@ http {
           {{if eq .auth "restricted"}}
       auth_basic              "Restricted";
       auth_basic_user_file    /etc/nginx/certs/{{base $host}}.htpasswd;
-          {{end}
+          {{end}}
         {{else}}
       auth_basic off;
         {{end}}
