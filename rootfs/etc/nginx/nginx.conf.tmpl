@@ -27,11 +27,13 @@ http {
   access_log /var/run/s6/nginx-access-log-fifo main;
 
   sendfile on;
-  #tcp_nopush on;
-
+  tcp_nopush on;
+  tcp_nodelay on;
   keepalive_timeout 65;
-
-  #gzip on;
+  types_hash_max_size 2048;
+  
+  gzip on;
+  gzip_disable "msie6";
 
   # Guidelines:
   # http://tautt.com/best-nginx-configuration-for-security/
@@ -126,7 +128,10 @@ http {
     ssl_stapling on;
     ssl_stapling_verify off;
     ssl_trusted_certificate /etc/nginx/certs/{{base $host}}.crt;
-
+    
+    client_max_body_size 0;
+    chunked_transfer_encoding on;
+    
     # config to enable HSTS(HTTP Strict Transport Security) https://developer.mozilla.org/en-US/docs/Security/HTTP_Strict_Transport_Security
     # to avoid ssl stripping https://en.wikipedia.org/wiki/SSL_stripping#SSL_stripping
     add_header Strict-Transport-Security "max-age=31536000; includeSubdomains;";
