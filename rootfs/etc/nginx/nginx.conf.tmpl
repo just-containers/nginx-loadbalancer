@@ -128,6 +128,14 @@ http {
           {{if lsdir (printf "/upstreams/%s" .upstream)}}
     location {{.path}} {
       access_log       off;
+      
+        {{if eq .auth "restricted"}}
+      auth_basic              "Restricted";
+      auth_basic_user_file    /etc/ssl/{{base $host}}.htpasswd;
+        {{else}}
+      auth_basic off;
+        {{end}}
+      
       proxy_pass       http://{{.upstream}};
       proxy_set_header Host $host;
       proxy_set_header X-Real-IP $remote_addr;
