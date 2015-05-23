@@ -83,6 +83,13 @@ http {
   {{$listeners := printf "%s/listeners" $host}}{{range $listenerbase := ls $listeners}}
     {{$listener := printf "%s/%s" $listeners $listenerbase}}
     {{with json (getv $listener)}}
+      {{if eq .protocol "https"}}
+  server {
+    server_name {{base $host}};
+    listen 80;
+    return 301 https://$server_name$request_uri;
+  }
+      {{end}}
   server {
     server_name {{base $host}};
 
