@@ -1,18 +1,101 @@
 user nginx;
 
 {{define "settings"}}
-worker_processes {{or .workerProcesses "auto"}};
+worker_processes {{or .worker_processes "auto"}};
 
 error_log /var/run/s6/nginx-error-log-fifo warn;
 pid /var/run/nginx.pid;
 
 events {
-  worker_connections {{or .workerConnections "1024"}};
+  worker_connections {{or .worker_connections "1024"}};
 }
+{{end}}
+
+{{define "location"}}
+  {{if lsdir (printf "/upstreams/%s" .data.upstream)}}
+    location {{.data.path}} {
+      # <custom>
+      {{range $key,$value := .nginx}}{{$key}} {{$value}}
+      {{end}}
+      # </custom>
+      access_log       off;
+      proxy_pass       http://{{.data.upstream}};
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+  {{end}}
+{{end}}
+
+{{define "listener"}}
+  server {
+    server_name {{base .host}};
+
+  {{if eq .data.protocol "http"}}
+    listen {{.data.address}};
+  {{else if eq .data.protocol "https"}}
+    listen {{.data.address}} ssl;
+
+    ssl on;
+    ssl_certificate           /etc/nginx/certs/{{base .host}}.crt;
+    ssl_certificate_key       /etc/nginx/certs/{{base .host}}.key;
+
+    # enable session resumption to improve https performance
+    # http://vincent.bernat.im/en/blog/2011-ssl-session-reuse-rfc5077.html
+    ssl_session_cache         shared:SSL:50m;
+    ssl_session_timeout       5m;
+
+    # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
+    ssl_dhparam               /etc/nginx/certs/dhparam.pem;
+
+    # enables server-side protection from BEAST attacks
+    # http://blog.ivanristic.com/2013/09/is-beast-still-a-threat.html
+    ssl_prefer_server_ciphers on;
+
+    # disable SSLv3(enabled by default since nginx 0.8.19) since it's less secure then TLS http://en.wikipedia.org/wiki/Secure_Sockets_Layer#SSL_3.0
+    ssl_protocols             TLSv1 TLSv1.1 TLSv1.2;
+
+    # ciphers chosen for forward secrecy and compatibility
+    # http://blog.ivanristic.com/2013/08/configuring-apache-nginx-and-openssl-for-forward-secrecy.html
+    ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK';
+
+    # enable ocsp stapling (mechanism by which a site can convey certificate revocation information to visitors in a privacy-preserving, scalable manner)
+    # http://blog.mozilla.org/security/2013/07/29/ocsp-stapling-in-firefox/
+    ssl_stapling on;
+    ssl_stapling_verify off;
+    ssl_trusted_certificate /etc/nginx/certs/{{base .host}}.crt;
+
+    # config to enable HSTS(HTTP Strict Transport Security) https://developer.mozilla.org/en-US/docs/Security/HTTP_Strict_Transport_Security
+    # to avoid ssl stripping https://en.wikipedia.org/wiki/SSL_stripping#SSL_stripping
+    add_header Strict-Transport-Security "max-age=31536000; includeSubdomains;";
+  {{end}}
+
+    # <custom>
+    {{range $key,$value := .nginx}}{{$key}} {{$value}}
+    {{end}}
+    # </custom>
+
+  {{$locations := printf "%s/locations" .host}}{{range $locationbase := ls $locations}}
+    {{$location := printf "%s/%s" $locations $locationbase}}
+    {{if exists $location}}
+      {{template "location" (json (printf "{\"nginx\":{},\"data\":%s}" (getv $location)))}}
+    {{else if exists (printf "%s/value" $location)}}
+      {{$nginxKey := printf "%s/.nginx" $location}}
+      {{$locationKey := printf "%s/value" $location}}
+      {{if exists $nginxKey}}
+        {{template "location" (json (printf "{\"nginx\":%s,\"data\":%s}" (getv $nginxKey) (getv $locationKey)))}}
+      {{else}}
+        {{template "location" (json (printf "{\"nginx\":%s,\"data\":%s}" (print "{}") (getv $locationKey)))}}
+      {{end}}
+    {{end}}
+  {{end}}
+  }
 {{end}}
 
 {{if exists "/settings"}}
   {{template "settings" (json (getv "/settings"))}}
+{{else if exists "/settings/.nginx"}}
+  {{template "settings" (json (getv "/settings/.nginx"))}}
 {{else}}
   {{template "settings" (json `{}`)}}
 {{end}}
@@ -26,12 +109,17 @@ http {
                   '"$http_user_agent" "$http_x_forwarded_for"';
   access_log /var/run/s6/nginx-access-log-fifo main;
 
+  # NGINX OPTIMIZATION: UNDERSTANDING SENDFILE, TCP_NODELAY AND TCP_NOPUSH
+  # https://t37.net/nginx-optimization-understanding-sendfile-tcp_nodelay-and-tcp_nopush.html
   sendfile on;
-  #tcp_nopush on;
+  tcp_nopush on;
+  tcp_nodelay on;
 
+  types_hash_max_size 2048;
   keepalive_timeout 65;
 
-  #gzip on;
+  gzip on;
+  gzip_disable "msie6";
 
   # Guidelines:
   # http://tautt.com/best-nginx-configuration-for-security/
@@ -77,71 +165,25 @@ http {
   }
 {{end}}
 
+server {
+    listen 80 default_server;
+    return 404;
+}
+
 {{$hosts := "/hosts"}}{{range $hostbase := ls $hosts}}
   {{$host := printf "%s/%s" $hosts $hostbase}}
-
   {{$listeners := printf "%s/listeners" $host}}{{range $listenerbase := ls $listeners}}
     {{$listener := printf "%s/%s" $listeners $listenerbase}}
-    {{with json (getv $listener)}}
-  server {
-    server_name {{base $host}};
-
-      {{if eq .protocol "http"}}
-    listen {{.address}};
-      {{else if eq .protocol "https"}}
-    listen {{.address}} ssl;
-
-    ssl on;
-    ssl_certificate           /etc/nginx/certs/{{base $host}};
-    ssl_certificate_key       /etc/nginx/certs/{{base $host}}.key;
-
-    # enable session resumption to improve https performance
-    # http://vincent.bernat.im/en/blog/2011-ssl-session-reuse-rfc5077.html
-    ssl_session_cache         shared:SSL:50m;
-    ssl_session_timeout       5m;
-
-    # Diffie-Hellman parameter for DHE ciphersuites, recommended 2048 bits
-    ssl_dhparam               /etc/ssl/certs/dhparam.pem;
-
-    # enables server-side protection from BEAST attacks
-    # http://blog.ivanristic.com/2013/09/is-beast-still-a-threat.html
-    ssl_prefer_server_ciphers on;
-
-    # disable SSLv3(enabled by default since nginx 0.8.19) since it's less secure then TLS http://en.wikipedia.org/wiki/Secure_Sockets_Layer#SSL_3.0
-    ssl_protocols             TLSv1 TLSv1.1 TLSv1.2;
-
-    # ciphers chosen for forward secrecy and compatibility
-    # http://blog.ivanristic.com/2013/08/configuring-apache-nginx-and-openssl-for-forward-secrecy.html
-    ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:ECDHE-RSA-RC4-SHA:ECDHE-ECDSA-RC4-SHA:RC4-SHA:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!3DES:!MD5:!PSK';
-
-    # enable ocsp stapling (mechanism by which a site can convey certificate revocation information to visitors in a privacy-preserving, scalable manner)
-    # http://blog.mozilla.org/security/2013/07/29/ocsp-stapling-in-firefox/
-    ssl_stapling on;
-    ssl_stapling_verify off;
-    ssl_trusted_certificate /etc/nginx/certs/{{base $host}};
-    resolver 8.8.8.8 8.8.4.4 valid=300s;
-    resolver_timeout 5s;
-
-    # config to enable HSTS(HTTP Strict Transport Security) https://developer.mozilla.org/en-US/docs/Security/HTTP_Strict_Transport_Security
-    # to avoid ssl stripping https://en.wikipedia.org/wiki/SSL_stripping#SSL_stripping
-    add_header Strict-Transport-Security "max-age=31536000; includeSubdomains;";
+    {{if exists $listener}}
+      {{template "listener" (json (printf "{\"nginx\":{},\"host\":\"%s\",\"data\":%s}" $host (getv $listener)))}}
+    {{else if exists (printf "%s/value" $listener)}}
+      {{$nginxKey := printf "%s/.nginx" $listener}}
+      {{$listenerKey := printf "%s/value" $listener}}
+      {{if exists $nginxKey}}
+        {{template "listener" (json (printf "{\"nginx\":%s,,\"host\":\"%s\"\"data\":%s}" (getv $nginxKey) $host (getv $listenerKey)))}}
+      {{else}}
+        {{template "listener" (json (printf "{\"nginx\":%s,\"host\":\"%s\",\"data\":%s}" (print "{}") $host (getv $listenerKey)))}}
       {{end}}
-
-      {{$locations := printf "%s/locations" $host}}{{range $locationbase := ls $locations}}
-        {{$location := printf "%s/%s" $locations $locationbase}}
-        {{with json (getv $location)}}
-          {{if lsdir (printf "/upstreams/%s" .upstream)}}
-    location {{.path}} {
-      access_log       off;
-      proxy_pass       http://{{.upstream}};
-      proxy_set_header Host $host;
-      proxy_set_header X-Real-IP $remote_addr;
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-          {{end}}
-        {{end}}
-      {{end}}
-  }
     {{end}}
   {{end}}
 {{end}}

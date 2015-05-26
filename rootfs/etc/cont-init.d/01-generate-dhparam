@@ -1,0 +1,6 @@
+#!/usr/bin/execlineb -P
+
+s6-setuidgid nginx
+if { s6-mkdir -p /etc/nginx/certs }
+if -t { s6-test ! -f /etc/nginx/certs/dhparam.pem }
+if { openssl dhparam -out /etc/nginx/certs/dhparam.pem 2048 }
