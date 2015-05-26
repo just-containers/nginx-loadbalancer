@@ -180,7 +180,7 @@ server {
       {{$nginxKey := printf "%s/.nginx" $listener}}
       {{$listenerKey := printf "%s/value" $listener}}
       {{if exists $nginxKey}}
-        {{template "listener" (json (printf "{\"nginx\":%s,,\"host\":\"%s\"\"data\":%s}" (getv $nginxKey) $host (getv $listenerKey)))}}
+        {{template "listener" (json (printf "{\"nginx\":%s,\"host\":\"%s\",\"data\":%s}" (getv $nginxKey) $host (getv $listenerKey)))}}
       {{else}}
         {{template "listener" (json (printf "{\"nginx\":%s,\"host\":\"%s\",\"data\":%s}" (print "{}") $host (getv $listenerKey)))}}
       {{end}}
