@@ -15,7 +15,7 @@ events {
   {{if lsdir (printf "/upstreams/%s" .data.upstream)}}
     location {{.data.path}} {
       # <custom>
-      {{range $key,$value := .nginx}}{{$key}} {{$value}}
+      {{range $key,$value := .nginx}}{{$key}} {{$value}};
       {{end}}
       # </custom>
       access_log       off;
@@ -71,7 +71,7 @@ events {
   {{end}}
 
     # <custom>
-    {{range $key,$value := .nginx}}{{$key}} {{$value}}
+    {{range $key,$value := .nginx}}{{$key}} {{$value}};
     {{end}}
     # </custom>
 
