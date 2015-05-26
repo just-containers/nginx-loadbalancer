@@ -8,26 +8,24 @@ Backend should follow this rules in order to provide to nginx all required infor
 
 ```
 /lb
-  /settings = '{
-    "workerProcesses": "auto",
-    "workerConnections": "1024"
-  }'
-```
-
-```
-/lb
+  /settings
+    /.nginx = '{}'
   /hosts
     /lisa.contoso.com
       /listeners
-        /ls1 = '{
-          "protocol": "http",
-          "address": "0.0.0.0:80"
-        }'
+        /ls1 = 
+          /.nginx = '{}'
+          /value = '{
+            "protocol": "http",
+            "address": "0.0.0.0:80"
+          }'
       /locations
-        /loc2 = '{
-          "path": "/api/.*",
-          "upstream": "up1"
-        }'
+        /loc2
+          /.nginx = '{}'
+          /value = '{
+            "path": "/api/.*",
+            "upstream": "up1"
+          }'
   /upstreams
     /up1
       /servers

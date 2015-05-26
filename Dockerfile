@@ -12,7 +12,7 @@ RUN echo "deb http://nginx.org/packages/ubuntu/ precise nginx" > /etc/apt/source
     apt-get-install-min nginx=1.8.0-1~precise
 
 # confd
-ADD https://github.com/glerchundi/confd/releases/download/v0.10.0-beta1/confd-0.10.0-beta1-linux-amd64 /usr/bin/confd
+ADD https://github.com/glerchundi/confd/releases/download/v0.10.0-beta2/confd-0.10.0-beta2-linux-amd64 /usr/bin/confd
 RUN chmod 0755 /usr/bin/confd
 
 ##
