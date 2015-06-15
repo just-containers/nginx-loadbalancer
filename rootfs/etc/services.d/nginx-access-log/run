@@ -1,2 +1,2 @@
 #!/usr/bin/execlineb -P
-logutil-service /var/run/s6/nginx-access-log-fifo /var/log/nginx-access-logs
+logutil-service -f /var/run/s6/nginx-access-log-fifo /var/log/nginx-access-logs
