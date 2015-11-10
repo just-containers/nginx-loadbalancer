@@ -1,4 +1,4 @@
-FROM quay.io/justcontainers/base:v0.8.1
+FROM quay.io/justcontainers/base-alpine:v0.10.0
 MAINTAINER Gorka Lerchundi Osa <glertxundi@gmail.com>
 
 ##
@@ -6,10 +6,7 @@ MAINTAINER Gorka Lerchundi Osa <glertxundi@gmail.com>
 ##
 
 # nginx
-RUN echo "deb http://nginx.org/packages/ubuntu/ precise nginx" > /etc/apt/sources.list.d/nginx.list && \
-    apt-key-min adv --keyserver keyserver.ubuntu.com --recv-keys ABF5BD827BD9BF62                   && \
-    apt-get update                                                                                  && \
-    apt-get-install-min nginx=1.8.0-1~precise
+RUN apk-install ca-certificates nginx=1.8.0-r1
 
 # confd
 ADD https://github.com/glerchundi/confd/releases/download/v0.10.0-beta2/confd-0.10.0-beta2-linux-amd64 /usr/bin/confd
@@ -24,9 +21,3 @@ COPY rootfs /
 
 # s6-fdholderd active by default
 RUN s6-rmrf /etc/s6/services/s6-fdholderd/down
-
-##
-## CLEANUP
-##
-
-RUN apt-cleanup
