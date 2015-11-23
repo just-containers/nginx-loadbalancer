@@ -8,9 +8,9 @@ MAINTAINER Gorka Lerchundi Osa <glertxundi@gmail.com>
 # nginx
 RUN apk-install ca-certificates nginx=1.8.0-r1
 
-# confd
-ADD https://github.com/glerchundi/confd/releases/download/v0.10.0-beta2/confd-0.10.0-beta2-linux-amd64 /usr/bin/confd
-RUN chmod 0755 /usr/bin/confd
+# renderizr
+ADD https://github.com/glerchundi/renderizr/releases/download/v0.1.3/renderizr-linux-amd64 /usr/bin/renderizr
+RUN chmod 0755 /usr/bin/renderizr
 
 ##
 ## ROOTFS

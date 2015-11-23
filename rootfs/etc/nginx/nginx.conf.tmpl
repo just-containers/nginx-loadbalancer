@@ -4,7 +4,7 @@ user nginx;
 worker_processes {{or .worker_processes "auto"}};
 
 error_log /var/run/s6/nginx-error-log-fifo warn;
-pid /var/run/nginx.pid;
+pid /var/run/nginx/nginx.pid;
 
 events {
   worker_connections {{or .worker_connections "1024"}};
@@ -12,7 +12,7 @@ events {
 {{end}}
 
 {{define "location"}}
-  {{if lsdir (printf "/upstreams/%s" .data.upstream)}}
+  {{if ls (printf "/upstreams/%s" .data.upstream)}}
     location {{.data.path}} {
       # <custom>
       {{range $key,$value := .nginx}}{{$key}} {{$value}};
@@ -75,7 +75,7 @@ events {
     {{end}}
     # </custom>
 
-  {{$locations := printf "%s/locations" .host}}{{range $locationbase := ls $locations}}
+  {{$locations := printf "%s/locations" .host}}{{range $locationbase := ls (printf "%s/" $locations)}}
     {{$location := printf "%s/%s" $locations $locationbase}}
     {{if exists $location}}
       {{template "location" (json (printf "{\"nginx\":{},\"data\":%s}" (getv $location)))}}
@@ -156,7 +156,7 @@ http {
   # more: http://www.html5rocks.com/en/tutorials/security/content-security-policy/#inline-code-considered-harmful
   #add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://ssl.google-analytics.com https://assets.zendesk.com https://connect.facebook.net; img-src 'self' https://ssl.google-analytics.com https://s-static.ak.facebook.com https://assets.zendesk.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://assets.zendesk.com; font-src 'self' https://themes.googleusercontent.com; frame-src https://assets.zendesk.com https://www.facebook.com https://s-static.ak.facebook.com https://tautt.zendesk.com; object-src 'none'";
 
-{{$upstreams := "/upstreams"}}{{range $upstreambase := ls $upstreams}}
+{{$upstreams := "/upstreams"}}{{range $upstreambase := ls (printf "%s/" $upstreams)}}
 {{$upstream := printf "%s/%s" $upstreams $upstreambase}}
   upstream {{base $upstream}} {
   {{range gets (printf "%s/servers/*" $upstream)}}{{with json .Value}}
@@ -170,9 +170,9 @@ server {
     return 404;
 }
 
-{{$hosts := "/hosts"}}{{range $hostbase := ls $hosts}}
+{{$hosts := "/hosts"}}{{range $hostbase := ls (printf "%s/" $hosts)}}
   {{$host := printf "%s/%s" $hosts $hostbase}}
-  {{$listeners := printf "%s/listeners" $host}}{{range $listenerbase := ls $listeners}}
+  {{$listeners := printf "%s/listeners" $host}}{{range $listenerbase := ls (printf "%s/" $listeners)}}
     {{$listener := printf "%s/%s" $listeners $listenerbase}}
     {{if exists $listener}}
       {{template "listener" (json (printf "{\"nginx\":{},\"host\":\"%s\",\"data\":%s}" $host (getv $listener)))}}
