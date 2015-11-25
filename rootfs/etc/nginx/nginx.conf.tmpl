@@ -13,6 +13,7 @@ events {
 
 {{define "location"}}
   {{if ls (printf "/upstreams/%s" .data.upstream)}}
+  {{$servers := gets (printf "/upstreams/%s/servers/*" .data.upstream)}}{{if $servers}}  
     location {{.data.path}} {
       # <custom>
       {{range $key,$value := .nginx}}{{$key}} {{$value}};
@@ -24,7 +25,7 @@ events {
       proxy_set_header X-Real-IP $remote_addr;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
-  {{end}}
+  {{end}}{{end}}
 {{end}}
 
 {{define "listener"}}
@@ -158,11 +159,13 @@ http {
 
 {{$upstreams := "/upstreams"}}{{range $upstreambase := ls (printf "%s/" $upstreams)}}
 {{$upstream := printf "%s/%s" $upstreams $upstreambase}}
+  {{$servers := gets (printf "%s/servers/*" $upstream)}}{{with $servers}}
   upstream {{base $upstream}} {
-  {{range gets (printf "%s/servers/*" $upstream)}}{{with json .Value}}
+  {{range $server := $servers}}{{with json .Value}}
     server {{.url}};
   {{end}}{{end}}
   }
+  {{end}}
 {{end}}
 
 server {
